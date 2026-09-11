@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -36,8 +37,7 @@ fig1 = px.line(
     y="일관객", 
     title=f"[{selected_movie}] 일별 관객수 변화",
     labels={"날짜": "날짜", "일관객": "일일 관객수(명)"},
-    markers=True,
-    hover_data={"날짜": "|%Y-%m-%d", "일관객": ":,d"}
+    markers=True
 )
 
 fig1.update_traces(
@@ -57,6 +57,45 @@ st.info(f"💡 **이 그래프로 알 수 있는 것:** 개봉 후 시간 경과
 
 st.write("---")
 
-# 4. 향후 그래프 추가를 위한 예시 구역 (확장 구역)
-st.header("📌 구역 2. [추가 예정] 시간 기반 비교 시각화")
-st.write("👉 *다음 그래프가 여기에 추가될 예정입니다 (예: 누적 관객수 추이, 요일별 관객수 분포 등).*")
+# 4. 구역 2: 상위 5개 영화 일일 관객수 비교 (선 그래프)
+st.header("📌 구역 2. 기간 내 관객수 상위 5개 영화 비교")
+
+# 일관객 합계 기준 상위 5개 영화 추출
+top5_movies = df.groupby("영화명")["일관객"].sum().nlargest(5).index.tolist()
+
+# 상위 5개 영화 데이터 필터링
+top5_df = df[df["영화명"].isin(top5_movies)].sort_values("날짜")
+
+# Plotly 다중 선 그래프 생성 (색상으로 영화 구분)
+fig2 = px.line(
+    top5_df,
+    x="날짜",
+    y="일관객",
+    color="영화명",
+    title="기간 내 일관객 합계 상위 5개 영화의 일별 관객수 비교",
+    labels={"날짜": "날짜", "일관객": "일일 관객수(명)", "영화명": "영화 제목"},
+    markers=False
+)
+
+fig2.update_traces(
+    hovertemplate="<b>영화명:</b> %{fullData.name}<br><b>날짜:</b> %{x|%Y-%m-%d}<br><b>일관객:</b> %{y:,}명<extra></extra>"
+)
+
+fig2.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="일일 관객수(명)",
+    hovermode="x unified",
+    legend_title_text="영화 목록 (클릭하여 켜기/끄기)"
+)
+
+st.plotly_chart(fig2, use_container_width=True)
+
+# 그래프 해석/시사점 작성 공간
+top5_names_str = ", ".join(top5_movies)
+st.info(f"💡 **이 그래프로 알 수 있는 것:** 기간 내 가장 많은 관객을 동원한 상위 5개 영화({top5_names_str})의 개봉 시기별 흥행 화력과 최고 전성기 스파이크를 상호 비교할 수 있습니다.")
+
+st.write("---")
+
+# 5. 향후 그래프 추가를 위한 예시 구역 (확장 구역)
+st.header("📌 구역 3. [추가 예정] 시간 기반 분석 시각화")
+st.write("👉 *다음 그래프가 여기에 추가될 예정입니다.*")
