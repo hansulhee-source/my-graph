@@ -73,8 +73,7 @@ fig2 = px.line(
     y="일관객",
     color="영화명",
     title="기간 내 일관객 합계 상위 5개 영화의 일별 관객수 비교",
-    labels={"날짜": "날짜", "일관객": "일일 관객수(명)", "영화명": "영화 제목"},
-    markers=False
+    labels={"날짜": "날짜", "일관객": "일일 관객수(명)", "영화명": "영화 제목"}
 )
 
 fig2.update_traces(
@@ -96,6 +95,72 @@ st.info(f"💡 **이 그래프로 알 수 있는 것:** 기간 내 가장 많은
 
 st.write("---")
 
-# 5. 향후 그래프 추가를 위한 예시 구역 (확장 구역)
-st.header("📌 구역 3. [추가 예정] 시간 기반 분석 시각화")
+# 5. 구역 3: 날짜별 10위권 일관객 총합 추이 (영역 그래프)
+st.header("📌 구역 3. 날짜별 박스오피스 TOP 10 전체 관객수 총합")
+
+# 날짜별 10위권 일관객 총합 계산
+daily_total = df.groupby("날짜")["일관객"].sum().reset_index()
+
+# 관객수 총합 기준 상위 3개 날짜 추출
+top3_days = daily_total.nlargest(3, "일관객").sort_values("날짜")
+
+# Plotly 영역 그래프 생성
+fig3 = px.area(
+    daily_total,
+    x="날짜",
+    y="일관객",
+    title="일별 박스오피스 TOP 10 관객수 총합 변화 (영역 그래프)",
+    labels={"날짜": "날짜", "일관객": "10위권 총 관객수(명)"}
+)
+
+fig3.update_traces(
+    hovertemplate="<b>날짜:</b> %{x|%Y-%m-%d}<br><b>TOP 10 총 관객수:</b> %{y:,}명<extra></extra>"
+)
+
+# 상위 3일 주석(Annotation) 표시 및 마커 추가
+for idx, row in top3_days.iterrows():
+    date_str = row["날짜"].strftime("%Y-%m-%d")
+    val = row["일관객"]
+    
+    # 해당 포인트에 붉은색 마커 표기
+    fig3.add_scatter(
+        x=[row["날짜"]],
+        y=[val],
+        mode="markers",
+        marker=dict(size=10, color="red"),
+        showlegend=False,
+        hoverinfo="skip"
+    )
+    
+    # 텍스트 주석 추가
+    fig3.add_annotation(
+        x=row["날짜"],
+        y=val,
+        text=f"<b>{date_str}</b><br>({val:,}명)",
+        showarrow=True,
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=1.5,
+        arrowcolor="red",
+        ax=0,
+        ay=-45,
+        font=dict(size=11, color="red")
+    )
+
+fig3.update_layout(
+    xaxis_title="날짜",
+    yaxis_title="TOP 10 총 관객수(명)",
+    hovermode="x unified"
+)
+
+st.plotly_chart(fig3, use_container_width=True)
+
+# 그래프 해석/시사점 작성 공간
+top3_dates_str = ", ".join([d.strftime('%Y년 %m월 %d일') for d in top3_days["날짜"]])
+st.info(f"💡 **이 그래프로 알 수 있는 것:** 연중 영화 시장 전체가 가장 활황이었던 최고 피크일 Top 3({top3_dates_str})를 한눈에 확인하고, 연휴나 성수기 시즌의 극장가 관객 집중도를 파악할 수 있습니다.")
+
+st.write("---")
+
+# 6. 향후 그래프 추가를 위한 확장 구역
+st.header("📌 구역 4. [추가 예정] 시간 기반 분석 시각화")
 st.write("👉 *다음 그래프가 여기에 추가될 예정입니다.*")
