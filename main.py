@@ -167,7 +167,7 @@ movie_summary = df.groupby("영화명").agg(
     차트인일수=("날짜", "nunique")
 ).reset_index()
 
-# 총관객수 기준 상위 10개 영화 추출 (가로 막대에서 상위 영화가 위에 오도록 올림차순 정렬)
+# 총관객수 기준 상위 10개 영화 추출
 top10_movies_df = movie_summary.nlargest(10, "총관객수").sort_values("총관객수", ascending=True)
 
 # Plotly 가로 막대그래프 생성
@@ -204,6 +204,66 @@ st.info(f"💡 **이 그래프로 알 수 있는 것:** 기간 중 가장 많은
 
 st.write("---")
 
-# 7. 향후 그래프 추가를 위한 확장 구역
-st.header("📌 구역 5. [추가 예정] 시간 기반 분석 시각화")
+# 7. 구역 5: 월×요일별 일관객 합계 히트맵
+st.header("📌 구역 5. 월 × 요일별 일관객 합계 히트맵")
+
+# 데이터 복사 및 월, 요일 추출
+df_heatmap = df.copy()
+df_heatmap['월'] = df_heatmap['날짜'].dt.strftime('%m월')
+df_heatmap['요일'] = df_heatmap['날짜'].dt.day_name()
+
+# 요일 한글 변환 및 정렬 순서 정의 (월요일 -> 일요일)
+day_map = {
+    'Monday': '월요일',
+    'Tuesday': '화요일',
+    'Wednesday': '수요일',
+    'Thursday': '목요일',
+    'Friday': '금요일',
+    'Saturday': '토요일',
+    'Sunday': '일요일'
+}
+day_order = ['월요일', '화요일', '수요일', '목요일', '금요일', '토요일', '일요일']
+
+df_heatmap['요일'] = df_heatmap['요일'].map(day_map)
+
+# 피벗 테이블 생성 (월 x 요일별 일관객 합계)
+heatmap_pivot = df_heatmap.pivot_table(
+    index='월',
+    columns='요일',
+    values='일관객',
+    aggfunc='sum'
+).reindex(columns=day_order).fillna(0)
+
+# Plotly 히트맵 생성 (관객이 많을수록 색이 진해지도록 Viridis 컬러팔레트 사용)
+fig5 = px.imshow(
+    heatmap_pivot,
+    labels=dict(x="요일", y="월", color="총 관객수(명)"),
+    x=day_order,
+    y=heatmap_pivot.index,
+    title="월 및 요일별 일관객 합계 히트맵",
+    color_continuous_scale="Viridis",
+    aspect="auto"
+)
+
+fig5.update_traces(
+    hovertemplate="<b>월:</b> %{y}<br><b>요일:</b> %{x}<br><b>관객수 합계:</b> %{z:,}명<extra></extra>"
+)
+
+fig5.update_layout(
+    xaxis_title="요일",
+    yaxis_title="월"
+)
+
+st.plotly_chart(fig5, use_container_width=True)
+
+# 히트맵 상 최다 관객 월/요일 조합 추출
+max_val = heatmap_pivot.values.max()
+max_pos = heatmap_pivot.stack().idxmax() # (월, 요일)
+
+st.info(f"💡 **이 그래프로 알 수 있는 것:** 월별/요일별 극장 관객 집중 패턴을 파악할 수 있으며, 이 데이터 세트에서는 **{max_pos[0]} {max_pos[1]}**에 가장 높은 관객수({int(max_val):,}명)를 기록하여 최고의 성수기 요일 및 시즌임을 알 수 있습니다.")
+
+st.write("---")
+
+# 8. 향후 그래프 추가를 위한 확장 구역
+st.header("📌 구역 6. [추가 예정] 시간 기반 분석 시각화")
 st.write("👉 *다음 그래프가 여기에 추가될 예정입니다.*")
